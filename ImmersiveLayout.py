@@ -61,7 +61,7 @@ class ImmersiveLayout(StencilView):
     '''Boolean specifying whether input events trigger the ImmersiveLayout to exit immersive mode.'''
     auto_hide = BooleanProperty(True)
     '''Boolean specifying whether the dock will hide after **timeout** seconds.'''
-    timeout = NumericProperty(1)
+    timeout = NumericProperty(5)
     '''Time after the last input event (keyboard, touch, mouse) after which the dock is hidden. If set to 0, the layout
     will stay opened until manually closed.'''
     animation_duration = NumericProperty(0.75)
@@ -229,17 +229,45 @@ class ImmersiveLayout(StencilView):
 
 
 if __name__ == '__main__':
-
     from kivy.base import runTouchApp
     from kivy.uix.label import Label
     from kivy.uix.button import Button
+    from kivy.clock import Clock
+    import time
+
+
+    def _timer(*args):
+        if main_panel._start_time:
+            main_panel.text = 'MAIN PANEL' \
+                              '\nTimeout = 5 Seconds' \
+                              '\nClick anywhere on the screen.' \
+                              '\nEntering immersive mode in {:.2f} seconds'\
+                .format(time.time() - main_panel._start_time)
+        else:
+            main_panel.text = 'MAIN PANEL' \
+                              '\nTimeout = 5 Seconds' \
+                              '\n Click anywhere on the screen.'
+
+    def start_timer(*args):
+        main_panel._start_time = time.time()
+
+    def end_timer(*args):
+        main_panel._start_time = None
 
     il=ImmersiveLayout()
+    il.bind(on_exit_immersive=start_timer)
+    il.bind(on_enter_immersive=end_timer)
+
     b=BoxLayout()
     b.add_widget(Button(text='1'))
     b.add_widget(Button(text='2'))
-    b.add_widget(Button(text='3'))
-    main_panel = Label(text='MAIN PANEL')
+    hide_btn =Button(text='Hide Dock')
+    hide_btn.bind(on_press=il.enter_immersive_mode)
+    b.add_widget(hide_btn)
+
+    main_panel = Label(halign='center')
+    main_panel._start_time = None
+    Clock.schedule_interval(_timer, 0.1)
     il.add_widget(main_panel)
     il.add_widget(b)
 
